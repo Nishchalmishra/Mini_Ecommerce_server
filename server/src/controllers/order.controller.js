@@ -6,6 +6,8 @@ import { ApiError } from "../services/apiError.js";
 import { CartItem } from "../models/cartItem.model.js";
 import {OrderItem} from "../models/orderItems.model.js"
 import mongoose from "mongoose";
+import { redis } from "../../redisClient.js"
+import chalk from "chalk"
 
 export const createOrder = asyncHandler(async (req, res) => {
     
@@ -85,6 +87,15 @@ export const createOrder = asyncHandler(async (req, res) => {
 
 export const getOrder = asyncHandler(async (req, res) => {
 
+    const cachedOrder = await redis.get("order:all")
+    
+    if (cachedOrder) {
+        console.log(chalk.redBright('From redis'));
+        return res.json(JSON.parse(cachedOrder));
+    } else {
+        console.log("No cache")
+    }
+
     console.log(req.user)
     
     const order = await Order.find({ userId: req.user?._id })
@@ -93,17 +104,40 @@ export const getOrder = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Order not found")
     }
 
+    await redis.set(
+        "order:all",
+        JSON.stringify(order),
+        'EX',
+        60
+    )
+
     return res.status(200).json(new ApiResponse(200, order))
 
 })
 
 export const getOrderById = asyncHandler(async (req, res) => {
+
+    const cachedOrder = await redis.get("order:" + req.params.id)
+    
+    if (cachedOrder) {
+        console.log(chalk.redBright('From redis'));
+        return res.json(JSON.parse(cachedOrder));
+    } else {
+        console.log("No cache")
+    }
     
     const order = await Order.findById(req.params.id)
 
     if (!order) {
         throw new ApiError(404, "Order not found")
     }
+
+    await redis.set(
+        "order:" + req.params.id,
+        JSON.stringify(order),
+        'EX',
+        60
+    )
 
     return res.status(200).json(new ApiResponse(200, order))
 })

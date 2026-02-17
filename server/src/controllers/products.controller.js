@@ -2,10 +2,28 @@ import {asyncHandler} from "../services/asyncHandler.js";
 import { Product } from "../models/products.model.js";
 import { ApiResponse } from "../services/apiResponse.js";
 import { ApiError } from "../services/apiError.js";
+import chalk from "chalk";
+import {redis} from "../../redisClient.js"
 
 export const getProducts = asyncHandler(async (req, res) => {
+
+    const cachedProduct = await redis.get("product:all")
+
+    if(cachedProduct) {
+        console.log(chalk.redBright('From redis'));
+        return res.json(JSON.parse(cachedProduct));
+    } else {
+        console.log("No cache")
+    }
     
     const products = await Product.find({})
+
+    await redis.set(
+        "product:all",
+        JSON.stringify(products),
+        'EX',
+        60
+    )
 
     return res
         .status(200)

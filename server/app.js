@@ -7,9 +7,16 @@ import authRoute from "./src/routes/auth.route.js"
 import cartRoute from "./src/routes/cart.route.js"
 import productRoute from "./src/routes/product.route.js"
 import orderRoute from "./src/routes/order.route.js"
+import chalk from "chalk"
+import cluster from "cluster"
 
-dotenv.config()
+dotenv.config({quiet: true})
 dbConnection()
+    .then(() => {
+        if (cluster.worker?.id === 1) {
+            console.log(chalk.greenBright("Database Connected.."));
+        }
+    })
 
 const app = express()
 
@@ -38,12 +45,12 @@ const responseTime = async(req,res,next) => {
     const timeStamp = Date.now()
     res.on("finish", () => {
         const responseTime = Date.now() - timeStamp
-        console.log(responseTime)
+        console.log(`Response time: ${responseTime}ms`)
     })
     next()
 }
 
-app.use(rateLimiter)
+// app.use(rateLimiter)
 app.use(responseTime)
 
 app.use("/api/v1/auth", authRoute)

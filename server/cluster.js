@@ -25,7 +25,7 @@ if (cluster.isPrimary) {
     app.get("/", (req, res) => res.send(`Worker ${process.pid} is running`));
 
     app.listen(process.env.PORT, () => {
-        console.log(process.env.PORT)
+        // console.log(process.env.PORT)
         console.log(chalk.green(`Worker ${process.pid} started`));
     });
 }

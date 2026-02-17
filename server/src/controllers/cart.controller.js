@@ -4,10 +4,23 @@ import { ApiResponse } from "../services/apiResponse.js";
 import { ApiError } from "../services/apiError.js";
 import { CartItem } from "../models/cartItem.model.js";
 import { Product } from "../models/products.model.js";
+import {redis} from "../../redisClient.js"
 import mongoose from "mongoose";
+import chalk from "chalk";
 
 export const getCart = asyncHandler(async (req, res) => {
     // console.log("user",req.user)
+    const cacheKey = 'cart:all';
+
+    const cachedCart = await redis.get(cacheKey);
+
+    if (cachedCart) {
+        console.log(chalk.redBright('From redis'));
+        return res.json(JSON.parse(cachedCart));
+    } else {
+        console.log("no cache")
+    }
+    
     const cart = await Cart.findOne({ userId: req.user?._id })
 
     if (!cart) {
@@ -17,7 +30,15 @@ export const getCart = asyncHandler(async (req, res) => {
     const cartItems = await CartItem.find({ cartId: cart._id })
         .populate("productId")
     
-    
+    await redis.set(
+        cacheKey,
+        JSON.stringify({
+            cart,
+            cartItems
+        }),
+        'EX',
+        60
+    );
 
     return res
         .status(200)
@@ -57,6 +78,8 @@ export const addToCart = asyncHandler(async (req, res) => {
         await CartItem.create({ productId, cartId: cart._id, quantity })
     }
 
+    await redis.del('cart:all');
+
     return res
         .status(200)
         .json(new ApiResponse(200, "Item added to cart"))
@@ -84,6 +107,8 @@ export const removeFromCart = asyncHandler(async (req, res) => {
     if (!deletedItem) {
         throw new ApiError(404, "Item not found in cart")
     }
+
+    await redis.del('cart:all');
 
     return res
         .status(200)

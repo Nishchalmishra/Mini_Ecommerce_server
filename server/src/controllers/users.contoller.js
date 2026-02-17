@@ -174,7 +174,7 @@ export const getUser = asyncHandler(async (req, res) => {
 export const verifyEmail = asyncHandler(async (req, res) => {
 
     const { token } = req.params
-    console.log(req.params)
+    // console.log(req.params)
 
     if(!token) {
         return res.status(400).json({error: "Please provide all the fields"})
