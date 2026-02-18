@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./server
+    env_file:
+      - .env
+    expose:
+      - "6000"
+
+  redis:
+    image: redis:latest
+    container_name: ecommerce-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:latest  
+    container_name: eccomerce-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf

@@ -7,30 +7,47 @@ import {redis} from "../../redisClient.js"
 
 export const getProducts = asyncHandler(async (req, res) => {
 
-    const cachedProduct = await redis.get("product:all")
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
 
-    if(cachedProduct) {
-        console.log(chalk.redBright('From redis'));
+    const skip = (page - 1) * limit;
+
+    const cacheKey = `product:page:${page}:limit:${limit}`;
+
+    const cachedProduct = await redis.get(cacheKey);
+
+    if (cachedProduct) {
         return res.json(JSON.parse(cachedProduct));
-    } else {
-        console.log("No cache")
     }
-    
+
     const products = await Product.find({})
+        .select("name price stock category")
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+    const totalProducts = await Product.countDocuments();
+
+    const responseData = new ApiResponse(200, {
+        products,
+        pagination: {
+            total: totalProducts,
+            page,
+            limit,
+            totalPages: Math.ceil(totalProducts / limit)
+        }
+    });
 
     await redis.set(
-        "product:all",
-        JSON.stringify(products),
-        'EX',
+        cacheKey,
+        JSON.stringify(responseData),
+        "EX",
         60
-    )
+    );
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, products)
-        )
-})
+    return res.status(200).json(responseData);
+});
+
 
 export const getProductById = asyncHandler(async (req, res) => {
     

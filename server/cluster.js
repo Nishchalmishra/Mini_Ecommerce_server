@@ -6,14 +6,14 @@ const maxCores = os.cpus().length;
 
 if (cluster.isPrimary) {
 
-    console.log(chalk.yellow(`Master ${process.pid} is running`));
+    // console.log(chalk.yellow(`Master ${process.pid} is running`));
 
     for (let i = 0; i < maxCores; i++) {
         cluster.fork();
     }
 
     cluster.on("exit", (worker) => {
-        console.log("Worker", worker.id, "died", new Date().toLocaleString());
+        // console.log("Worker", worker.id, "died", new Date().toLocaleString());
         cluster.fork();
     });
 
@@ -24,7 +24,7 @@ if (cluster.isPrimary) {
 
     app.get("/", (req, res) => res.send(`Worker ${process.pid} is running`));
 
-    app.listen(process.env.PORT, () => {
+    app.listen(process.env.PORT, "0.0.0.0", () => {
         // console.log(process.env.PORT)
         console.log(chalk.green(`Worker ${process.pid} started`));
     });

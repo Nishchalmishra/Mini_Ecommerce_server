@@ -45,7 +45,7 @@ const responseTime = async(req,res,next) => {
     const timeStamp = Date.now()
     res.on("finish", () => {
         const responseTime = Date.now() - timeStamp
-        console.log(`Response time: ${responseTime}ms`)
+        // console.log(`Response time: ${responseTime}ms`)
     })
     next()
 }
